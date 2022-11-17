@@ -1,0 +1,8 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/TestApp/PicoW",
+    "cmake.buildDirectory": "${workspaceFolder}/TestApp/build",
+    "files.associations": {
+        "stdio.h": "c",
+        "cyw43_arch.h": "c"
+    }
+}
