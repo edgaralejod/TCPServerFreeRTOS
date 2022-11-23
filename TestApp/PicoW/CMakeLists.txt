@@ -15,6 +15,7 @@ pico_sdk_init()
 add_executable(
         main
         main.c
+        ccd.c
         IntQueueTimer.c
         RegTest.s
         ../Common/Minimal/blocktim.c
@@ -50,7 +51,8 @@ target_compile_definitions(main PRIVATE
 )
 target_link_libraries(
         main 
-        pico_stdlib 
+        pico_stdlib
+        hardware_uart
         FreeRTOS-Kernel 
         FreeRTOS-Kernel-Heap4
         pico_cyw43_arch_lwip_sys_freertos

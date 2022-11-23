@@ -18,7 +18,7 @@
 #define DEFAULT_ACCEPTMBOX_SIZE TCPIP_MBOX_SIZE
 
 #define LWIP_TIMEVAL_PRIVATE 0
-
+#define LWIP_SOCKET 1
 // not necessary, can be done either way
 #define LWIP_TCPIP_CORE_LOCKING_INPUT 1
 #endif

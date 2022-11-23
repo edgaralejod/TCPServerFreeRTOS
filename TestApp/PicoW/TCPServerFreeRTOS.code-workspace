@@ -10,7 +10,9 @@
 	"settings": {
 		"files.associations": {
 			"stdio.h": "c",
-			"cyw43_arch.h": "c"
+			"cyw43_arch.h": "c",
+			"uart.h": "c",
+			"task.h": "c"
 		}
 	}
 }
