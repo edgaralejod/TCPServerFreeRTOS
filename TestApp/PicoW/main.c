@@ -44,6 +44,9 @@ static void handle_connection(int conn_sock);
 TaskHandle_t xWifiTaskHandle;
 TaskHandle_t xHeartBeatHandle;
 extern TaskHandle_t xCCDTaskHandle;
+extern TaskHandle_t xCCDRxTaskHandle;
+extern TaskHandle_t xCCDSpeedTaskHandle;
+extern SemaphoreHandle_t xSemaphoreUart;
 
 /* Global variables */
 char isLedOn = 0;
@@ -52,24 +55,33 @@ uint8_t test = 0;
 UBaseType_t uxCoreAffinityMask;
 void main( void )
 {
-	stdio_init_all();
-    printf(" Starting Program.\n");
-	xTaskCreate( pvrHeartBeatTask, "Hearbeat", configMINIMAL_STACK_SIZE, NULL, mainQUEUE_SEND_TASK_PRIORITY, &xHeartBeatHandle );
-	xTaskCreate( pvrWifiTask, "Wifi", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xWifiTaskHandle );
-    xTaskCreate( pvrCCDTask, "CCD", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xCCDTaskHandle );
-    uxCoreAffinityMask = ( ( 1 << 0 ) );
-    vTaskCoreAffinitySet( xWifiTaskHandle, uxCoreAffinityMask );
-    uxCoreAffinityMask = ( ( 1 << 1 ) );
-    vTaskCoreAffinitySet( xHeartBeatHandle, uxCoreAffinityMask );
-    vTaskCoreAffinitySet( xCCDTaskHandle, uxCoreAffinityMask );
-	vTaskStartScheduler();
-	/* If all is well, the scheduler will now be running, and the following
-	line will never be reached.  If the following line does execute, then
-	there was insufficient FreeRTOS heap memory available for the Idle and/or
-	timer tasks to be created.  See the memory management section on the
-	FreeRTOS web site for more details on the FreeRTOS heap
-	http://www.freertos.org/a00111.html. */
-	for( ;; );
+  stdio_init_all();
+  printf(" Starting Program v0.1.\n");
+  xCCDTimer1Handle = xTimerCreate( "CCDTimer1", TIMER1_TICKS, pdFAIL, TIMER1, vCCDTimer1Callback );
+  configASSERT( xCCDTimer1Handle );
+  xTaskCreate( pvrHeartBeatTask, "Hearbeat", configMINIMAL_STACK_SIZE, NULL, mainQUEUE_SEND_TASK_PRIORITY, &xHeartBeatHandle );
+  xTaskCreate( pvrWifiTask, "Wifi", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xWifiTaskHandle );
+  xTaskCreate( pvrCCDTask, "CCD", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xCCDTaskHandle );
+  xTaskCreate( pvrCCDRxTask, "CCDRx", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xCCDRxTaskHandle );
+  xTaskCreate( pvrCCDSpeedTask, "CCDSpeed", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xCCDSpeedTaskHandle );
+  //Create the UART Semaphore
+  xSemaphoreUart = xSemaphoreCreateMutex();
+  configASSERT( xSemaphoreUart );
+
+  //uxCoreAffinityMask = ( ( 1 << 0 ) );
+  //vTaskCoreAffinitySet( xWifiTaskHandle, uxCoreAffinityMask );
+  //uxCoreAffinityMask = ( ( 1 << 1 ) );
+  //vTaskCoreAffinitySet( xHeartBeatHandle, uxCoreAffinityMask );
+ // vTaskCoreAffinitySet( xCCDTaskHandle, uxCoreAffinityMask );
+  //vTaskCoreAffinitySet( xCCDRxTaskHandle, uxCoreAffinityMask );
+  vTaskStartScheduler();
+  /* If all is well, the scheduler will now be running, and the following
+  line will never be reached.  If the following line does execute, then
+  there was insufficient FreeRTOS heap memory available for the Idle and/or
+  timer tasks to be created.  See the memory management section on the
+  FreeRTOS web site for more details on the FreeRTOS heap
+  http://www.freertos.org/a00111.html. */
+  for( ;; );
 }
 /*-----------------------------------------------------------*/
 /*-----------------------------------------------------------*/
@@ -78,13 +90,13 @@ static void pvrHeartBeatTask( void *pvParameters )
 TickType_t xNextWakeTime;
 const unsigned long ulValueToSend = 100UL;
 
-	/* Remove compiler warning about unused parameter. */
-	( void ) pvParameters;
+  /* Remove compiler warning about unused parameter. */
+  ( void ) pvParameters;
 
 
-	for( ;; )
-	{
-		vTaskDelay( 500 );
+  for( ;; )
+  {
+    vTaskDelay( 1000 );
         /* Toggle the LED. */
         if (isLedOn) {
             if ( isWifiInit )
@@ -96,15 +108,15 @@ const unsigned long ulValueToSend = 100UL;
             //printf("Turning You ON!\n\r");
             isLedOn = 1;
         }
-	}
+  }
 }
 /*-----------------------------------------------------------*/
 
 static void pvrWifiTask( void *pvParameters )
 {
-	char input = 0;
-	/* Remove compiler warning about unused parameter. */
-	( void ) pvParameters;
+  char input = 0;
+  /* Remove compiler warning about unused parameter. */
+  ( void ) pvParameters;
     vTaskDelay( 1000 );
     //Initialize the cyw43 wifi module and check for success
     if (cyw43_arch_init() != 0) {
@@ -112,6 +124,7 @@ static void pvrWifiTask( void *pvParameters )
         vTaskDelete( NULL );
     }
     isWifiInit = 1;
+#if 0
     cyw43_arch_enable_sta_mode();
     printf("Station mode enabled.\r");
     //Connect to the AP and check for success
@@ -121,10 +134,12 @@ static void pvrWifiTask( void *pvParameters )
     }
     //Start the TCP server
     run_server();
-	for( ;; )
-	{	
-        vTaskDelay( 1000 );
-	}
+#endif
+  for( ;; )
+  {	
+    vTaskDelay( 1000 );
+  }
+
 }
 /*-----------------------------------------------------------*/
 void vApplicationMallocFailedHook( void )
@@ -174,11 +189,11 @@ void vApplicationIdleHook( void )
 
 void vApplicationTickHook( void )
 {
-	/* This function will be called by each tick interrupt if
-	configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
-	added here, but the tick hook is called from an interrupt context, so
-	code must not attempt to block, and only the interrupt safe FreeRTOS API
-	functions can be used (those that end in FromISR()). */
+  /* This function will be called by each tick interrupt if
+  configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
+  added here, but the tick hook is called from an interrupt context, so
+  code must not attempt to block, and only the interrupt safe FreeRTOS API
+  functions can be used (those that end in FromISR()). */
 }
 
 static void send_message(int socket, char *msg)

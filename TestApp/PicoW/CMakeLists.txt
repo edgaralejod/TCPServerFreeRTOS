@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 set(PICO_BOARD pico_w)
 # Pull in FreeRTOS
+set(FREERTOS_KERNEL_PATH /Users/edgarduarte/ProjectsImac/FreeRTOS-SMP-Demos/FreeRTOS/Source/)
 include(FreeRTOS_Kernel_import.cmake)
 
 project(main C CXX ASM)
@@ -53,6 +54,7 @@ target_link_libraries(
         main 
         pico_stdlib
         hardware_uart
+        hardware_pwm
         FreeRTOS-Kernel 
         FreeRTOS-Kernel-Heap4
         pico_cyw43_arch_lwip_sys_freertos

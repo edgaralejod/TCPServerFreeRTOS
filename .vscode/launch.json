@@ -7,21 +7,22 @@
             "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",
             "type": "cortex-debug",
-            //"serverpath": "/usr/local/bin/JLinkGDBServerCL",
-            "servertype": "openocd",
-            /*"serverArgs": [
+            "serverpath": "/usr/local/bin/JLinkGDBServerCL",
+            //"servertype": "openocd",
+            "servertype": "jlink",
+            "serverArgs": [
                 "transport select swd",
-            ],*/
+            ],
             "configFiles": [
-                "interface/jlink.cfg",
-                "target/rp2040.cfg",
+                "interface/picoprobe.cfg",
+                "target/rp2040.cfg"
             ],
             "gdbPath": "/usr/local/bin/arm-none-eabi-gdb",
             //"gdbPath": "arm-none-eabi-gdb",
             "interface": "swd",
             //"serialNumber": "optionally put the jlink serial number here",
             "device": "RP2040_M0_0",
-            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/rp2040.svd",
+            "svdFile": "/Users/edgarduarte/pico/pico-sdk/src/rp2040/hardware_regs/rp2040.svd",
             "showDevDebugOutput": "parsed",
             "runToEntryPoint": "main",
             // Give restart the same functionality as runToMain

@@ -22,11 +22,17 @@
 #ifndef CCD_LIBRARY_H
 #define CCD_LIBRARY_H
 #include "FreeRTOS.h"
+#include "semphr.h"
+#include "timers.h"
 #include "task.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "pico/stdlib.h"
 
+static uint8_t messageAirbagOk[3] = {0x50, 0x00, 0x00};
+static uint8_t messageAirbagBad[3] = {0x51, 0x00, 0x00};
+static uint8_t messageVehicleSpeed[4] = {0x24, 0x02, 0x00, 0x00};
+static uint8_t CCD_ignoreList[3] = { 0x22, 0x24, 0x51 };
 #define CCD_DEFAULT_SPEED     7812 // default CCD-bus baudrate
 #define UART_FRAME_ERROR      0x10 // framing error by UART
 #define UART_OVERRUN_ERROR    0x08 // overrun condition by UART
@@ -51,35 +57,46 @@
 #define IDLE_PIN              2    // Arduino Mega: INT4 pin (CCD-bus idle interrupt)
 #define CTRL_PIN              3    // Arduino Mega: INT5 pin (CCD-bus active byte (control) interrupt)
 #define CUSTOM_TRANSCEIVER    0
-
+#define TIMER1                0
+#define TIMER1_TICKS          5
 // Set (1), clear (0) and invert (1->0; 0->1) bit in a register or variable easily.
 #define sbi(reg, bit) reg |=  (1 << bit)
 #define cbi(reg, bit) reg &= ~(1 << bit)
 #define ibi(reg, bit) reg ^=  (1 << bit)
 
 extern TaskHandle_t xCCDTaskHandle;
+extern TaskHandle_t xCCDRxTaskHandle;
+extern TaskHandle_t xCCDSpeedTaskHandle;
+extern TimerHandle_t xCCDTimer1Handle;
+extern SemaphoreHandle_t xSemaphoreUart;
 
 void pvrCCDTask( void *pvParameters );
-void CCD_Init(void);
-void CCD_Listen_All(void);
-void CCD_Listen(uint8_t* ids);
-void CCD_IgnoreAll(void);
-void CCD_Ignore(uint8_t* ids);
-void CCD_ReceiveByte(void);
+void pvrCCDRxTask( void *pvParameters );
+void pvrCCDSpeedTask( void *pvParameters );
+void vCCDTimer1Callback( TimerHandle_t xTimer );
+void CCD_SendMessage(uint8_t* message, uint8_t length);
+void CCD_SetMPH(uint8_t mph, uint8_t *message);
+//void CCD_Init(void);
+//void CCD_Listen_All(void);
+//void CCD_Listen(uint8_t* ids);
+//void CCD_IgnoreAll(void);
+//void CCD_Ignore(uint8_t* ids);
+uint8_t CCD_ReceiveByte(void);
 void CCD_SendByte(uint8_t byte);
-void CCD_TransmitDelayHandler(void);
-void CCD_timer1Handler(void);
-void CCD_BusIDleInterruptHandler(void);
-void CCD_ActiveByteInterruptHandler(void);
-void CCD_OnMessageReceived(void);
-void CCD_OnError(void);
+//void CCD_TransmitDelayHandler(void);
+//void CCD_timer1Handler(void);
+//void CCD_BusIDleInterruptHandler(void);
+//void CCD_ActiveByteInterruptHandler(void);
+//void CCD_OnMessageReceived(void);
+//void CCD_OnError(void);
 void CCDINTERNAL_SerialInit(uint baudrate);
-void CCDINTERNAL_TransmitDelayTimerInit(void);
-void CCDINTERNAL_TransmitDelayTimerStart(void);
-void CCDINTERNAL_TransmitDelayTimerStop(void);
-void CCDINTERNAL_ClockGeneratorInit(void);
-void CCDINTERNAL_BusIdleTimerInit(void);
-void CCDINTERNAL_BusIdleTimerStart(void);
-void CCDINTERNAL_BusIdleTimerStop(void);
-void CCDINTERNAL_ProcessMessage(void);
+void CCDINTERNAL_ProcessMessage(uint8_t *message, uint8_t length);
+//void CCDINTERNAL_TransmitDelayTimerInit(void);
+//void CCDINTERNAL_TransmitDelayTimerStart(void);
+//void CCDINTERNAL_TransmitDelayTimerStop(void);
+//void CCDINTERNAL_ClockGeneratorInit(void);
+//void CCDINTERNAL_BusIdleTimerInit(void);
+//void CCDINTERNAL_BusIdleTimerStart(void);
+//void CCDINTERNAL_BusIdleTimerStop(void);
+
 #endif /*CCD_LIBRARY_H*/
